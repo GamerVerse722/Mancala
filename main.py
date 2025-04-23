@@ -1,4 +1,4 @@
-from typing import List, Any
+from typing import List, Any, Optional
 import os
 
 class Player:
@@ -11,10 +11,10 @@ class Player:
         return ", ".join([str(x) for x in self.holes])
 
 class Board:
-    def __init__(self):
+    def __init__(self) -> None:
         self.board = self.create_board()
         self.player_a: Player = Player("A", [1, 2, 3, 4, 5, 6], 7)
-        self.player_b: Player = Player("B", [8, 9, 10, 11, 12, 13], 0)
+        self.player_b: Player = Player("B", [13, 12, 11, 10, 9, 8], 0)
         self.current_player: Player = self.player_a
 
     @staticmethod
@@ -27,7 +27,7 @@ class Board:
     def is_valid_move(self, player: Player, position: int) -> bool:
         return True if position in player.holes and self.board[position] != 0 else False
 
-    def make_move(self, position: int) -> None:
+    def make_move(self, position: int) -> bool:
         beads: int = self.board[position]
         self.board[position] = 0
         index: int = position
@@ -37,49 +37,47 @@ class Board:
             if index == self.get_opponent().mancala_spot:
                 continue
 
+            if index in self.current_player.holes and self.board[index] == 0 and beads == 1:
+                self.board[self.current_player.mancala_spot] += 1
+
+                flipped_index: int = self.get_opponent().holes[self.current_player.holes.index(index)]
+                self.board[self.current_player.mancala_spot] += self.board[flipped_index]
+                self.board[flipped_index] = 0
+
+                return False
+
             self.board[index] += 1
             beads -= 1
+
+        if index == self.current_player.mancala_spot:
+            return True
+
+        return False
+
 
     def can_check_winner(self) -> bool:
         return True if sum(self.board[1:7]) == 0 or sum(self.board[8:]) == 0 else False
 
-    def get_winner(self) -> Player:
-        return self.player_a if sum(self.board[1:8]) > sum(self.board[8:]) + self.board[0] else self.player_b
+    def get_winner(self) -> Optional[Player]:
+        if self.board[0] == self.board[7]: return None
+        return self.player_b if self.board[0] > self.board[7] else self.player_a
 
     def tally_score(self) -> None:
-        player_a_score: int = sum(self.board[1:8])
-        player_b_score: int = sum(self.board[8:]) + self.board[0]
+        total_points: int = sum(self.board[1:7] + self.board[8:])
 
-        self.board = [0 for _ in range(14)]
-        self.board[7] = player_a_score
-        self.board[0] = player_b_score
+        for index in range(14):
+            if index == self.current_player.mancala_spot: self.board[index] += total_points
+            elif index == self.get_opponent().mancala_spot: continue
+            else: self.board[index] = 0
 
-
-    def swap_players(self):
+    def swap_players(self) -> None:
         self.current_player = self.get_opponent()
 
     def get_opponent(self) -> Player:
         return self.player_a if self.current_player == self.player_b else self.player_b
 
-    def take_turn(self):
-        print(f"Players {self.current_player.name}'s Turn!")
-        print(f"Possible moves: {self.current_player.possible_holes()}")
-        while True:
-            try:
-                move = int(input("Select a hole: "))
-                if self.is_valid_move(self.current_player, move):
-                    self.make_move(move)
-                    self.swap_players()
-                    break
-                else:
-                    print("Invalid move!")
-            except ValueError:
-                print("Invalid move!")
-
-
-    def print_board(self):
-        print(f"this {self.current_player.name}'s turn")
-        print("\033[1;91m" + " " * 8 +self._format_row([x for x in range(13, 7, -1)]))
+    def print_board(self) -> None:
+        print("\033[0;107m\033[1;91m" + " " * 8 +self._format_row([x for x in range(13, 7, -1)]))
         print("-" * 8 * 7)
         print(self._format_row(["B:"] + self.board[14:7:-1]))
         print(f"{self.board[0]:^8}{' ' * 8 * 5}\033[1;94m{self.board[7]:^8}")
@@ -96,10 +94,23 @@ board = Board()
 while True:
     os.system('clear')
     board.print_board()
-    board.take_turn()
+    print(f"Players {board.current_player.name}'s Turn!")
+    print(f"Possible moves: {board.current_player.possible_holes()}")
+    while True:
+        try:
+            move = int(input("Select a hole: "))
+            if board.is_valid_move(board.current_player, move):
+                if board.make_move(move):
+                    break
+                if not board.can_check_winner():
+                    board.swap_players()
+                break
+            else: print("Invalid move!")
+        except ValueError: print("Invalid type!")
+
     if board.can_check_winner():
         board.tally_score()
         os.system('clear')
         board.print_board()
-        print(f"Player {board.get_winner().name} wins!")
+        print("Draw!") if board.get_winner() is None else print(f"Player {board.get_winner().name} wins!")
         break
