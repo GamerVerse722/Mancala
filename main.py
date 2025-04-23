@@ -104,13 +104,11 @@ class Board:
 
 board = Board()
 
-board.board = [0, 1, 0, 0, 4, 0, 0, 0, 2, 0, 0, 6, 4, 4]
-# board.swap_players()
 
 while True:
     os.system('clear')
     board.print_board()
-    if board.was_captured: print(f"\033[1;93mPlayer {board.current_player.name} captured opponent's beads!\033[0m")
+    if board.was_captured: print(f"\033[1;93mPlayer {board.current_player.name} captured opponent's beads! Go Again.\033[0m")
     print(f"Players {board.current_player.name}'s Turn!")
     print(f"Possible moves: {board.current_player.possible_holes()}")
     while True:
