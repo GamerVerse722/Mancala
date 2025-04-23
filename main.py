@@ -106,9 +106,6 @@ class Board:
         return "".join([f"{x:<8}" for x in row])
 
 board = Board()
-# board.board = [0, 4,4,4,4,0,5, 1, 2,6,0,5,5,5]
-board.board = [0, 1, 0, 0, 3, 0, 0, 0, 2, 0, 0, 6, 4, 4]
-# board.swap_players()
 
 
 while True:
