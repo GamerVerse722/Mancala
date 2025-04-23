@@ -18,6 +18,7 @@ class Board:
         self.current_player: Player = self.player_a
         self._last_captured: bool = False
         self.was_captured: bool = False
+        self.landed_on_mancala: bool = False
 
     @staticmethod
     def create_board() -> List[int]:
@@ -31,6 +32,7 @@ class Board:
 
     def make_move(self, position: int) -> bool:
         self.was_captured = False
+        self.landed_on_mancala = False
         beads: int = self.board[position]
         self.board[position] = 0
         index: int = position
@@ -60,6 +62,7 @@ class Board:
             beads -= 1
 
         if index == self.current_player.mancala_spot:
+            self.landed_on_mancala = True
             return True
 
         return False
@@ -103,24 +106,31 @@ class Board:
         return "".join([f"{x:<8}" for x in row])
 
 board = Board()
+# board.board = [0, 4,4,4,4,0,5, 1, 2,6,0,5,5,5]
+board.board = [0, 1, 0, 0, 3, 0, 0, 0, 2, 0, 0, 6, 4, 4]
+# board.swap_players()
 
 
 while True:
     os.system('clear')
     board.print_board()
-    if board.was_captured: print(f"\033[1;93mPlayer {board.current_player.name} captured opponent's beads! Go Again.\033[0m")
+    if board.was_captured: print(f"\033[1;93mPlayer {board.get_opponent().name} captured opponent's beads!\033[0m")
+    if board.landed_on_mancala: print(f"\033[1;93mPlayer {board.current_player.name} landed on mancala! Go again.\033[0m")
     print(f"Players {board.current_player.name}'s Turn!")
     print(f"Possible moves: {board.current_player.possible_holes()}")
     while True:
         try:
             move = int(input("Select a hole: "))
-            if board.is_valid_move(board.current_player, move):
-                if board.make_move(move):
-                    break
-                if not board.can_check_winner():
-                    board.swap_players()
+            if not board.is_valid_move(board.current_player, move):
+                print("Invalid move!")
+                continue
+
+            elif board.make_move(move):
                 break
-            else: print("Invalid move!")
+
+            if not board.can_check_winner():
+                board.swap_players()
+            break
         except ValueError: print("Invalid type!")
 
     if board.can_check_winner():
